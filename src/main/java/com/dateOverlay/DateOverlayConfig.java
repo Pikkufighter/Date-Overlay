@@ -8,6 +8,16 @@ import net.runelite.client.config.ConfigItem;
 public interface DateOverlayConfig extends Config
 {
 	@ConfigItem(
+			keyName = "showTime",
+			name = "Show Time",
+			description = "Show hours, minutes and seconds?"
+	)
+	default boolean showTime()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 			keyName = "dateFormat",
 			name = "Date Format",
 			description = "Which format the date should be shown in"
@@ -20,8 +30,7 @@ public interface DateOverlayConfig extends Config
 	public static enum DateTimeFormats
 	{
 		ddMMyyyy,
-		ddMMyyyyHHmmss,
 		yyyyMMdd,
-		yyyyMMddHHmmss
+		MMddyyyy
 	}
 }

@@ -1,21 +1,19 @@
 package com.dateOverlay;
 
 import com.google.inject.Provides;
-import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
-import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.config.ConfigManager;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.task.Schedule;
+import net.runelite.client.ui.overlay.OverlayManager;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import javax.inject.Inject;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 @Slf4j
 @PluginDescriptor(
@@ -23,51 +21,56 @@ import java.util.Date;
 )
 public class DateOverlayPlugin extends Plugin
 {
+	public String currentDateTime;
 	@Inject
 	private Client client;
-
 	@Inject
 	private DateOverlayConfig config;
+	@Inject
+	private DateOverlayOverlay overlay;
+	@Inject
+	private OverlayManager overlayManager;
 
 	@Override
-	protected void startUp() throws Exception
-	{
-		var dateFormat = getDateFormat();
-		var localDateTime = java.time.LocalDateTime.now();
-		var formatter = java.time.format.DateTimeFormatter.ofPattern(dateFormat);
-		var string = localDateTime.format(formatter);
-		log.info(String.valueOf(string));
+	protected void startUp() throws Exception {
+		overlayManager.add(overlay);
 	}
 
-	@Override
-	protected void shutDown() throws Exception
-	{
-
-	}
-
-	public String getDateFormat() {
-		switch (config.dateTimeFormat())
-		{
-			case ddMMyyyyHHmmss:
-				return "dd-MM-yyyy HH:mm:ss";
-			case yyyyMMdd:
-				return "yyyy-MM-dd";
-			case yyyyMMddHHmmss:
-				return "yyyy-MM-dd HH:mm:ss";
-			default:
-				return "dd-MM-yyyy";
+	@Schedule(period = 1, unit = ChronoUnit.SECONDS)
+	public void timeSchedule() {
+		if (client.getGameState() == GameState.LOGGED_IN) {
+			String dateFormat = getDateFormat();
+			LocalDateTime localDateTime = java.time.LocalDateTime.now();
+			DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern(dateFormat);
+			currentDateTime = localDateTime.format(formatter);
 		}
 	}
 
-	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
-	{
+	public String getDateFormat() {
+		String dateformat = "dd-MM-yyyy";
 
+		switch (config.dateTimeFormat()) {
+			case yyyyMMdd:
+				dateformat = "yyyy-MM-dd";
+				break;
+			case MMddyyyy:
+				dateformat = "MM-dd-yyyy";
+				break;
+		}
+
+		if(config.showTime())
+			dateformat += " HH:mm:ss";
+
+		return dateformat;
+	}
+
+	@Override
+	protected void shutDown() {
+		overlayManager.remove(overlay);
 	}
 
 	@Provides
-	DateOverlayConfig provideConfig(ConfigManager configManager)
-	{
+	DateOverlayConfig provideConfig(ConfigManager configManager) {
 		return configManager.getConfig(DateOverlayConfig.class);
 	}
 }
