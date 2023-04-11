@@ -58,6 +58,11 @@ public class DateOverlayPlugin extends Plugin
 				break;
 		}
 
+		if(config.nameOfMonth())
+			dateformat = dateformat.replace("MM", "MMMM");
+		if(config.shortYear())
+			dateformat = dateformat.replace("yyyy", "yy");
+
 		if(config.showTime())
 			dateformat += " HH:mm:ss";
 
